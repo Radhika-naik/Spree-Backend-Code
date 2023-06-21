@@ -1,9 +1,10 @@
 import logging
 import os
 import azure.functions as func
+import json
 from azure.cosmos import CosmosClient
 
-def login_customer(req: func.HttpRequest) -> func.HttpResponse:
+def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request for customer login.')
 
     # Read the request body
@@ -15,15 +16,16 @@ def login_customer(req: func.HttpRequest) -> func.HttpResponse:
 
     if not customer_phno or not customer_password:
         return func.HttpResponse(
-            "Please provide customer_phno and customer_password.",
-            status_code=400
-        )
+            json.dumps({"code": "ERROR", "message": "Please provide customer_phno and customer_password."}),
+            status_code=400,
+            mimetype='application/json'
+            )
 
     # Connect to the Cosmos DB
-    cosmosdb_uri = os.environ['CosmosDBURI']
-    cosmosdb_key = os.environ['CosmosDBKey']
+    cosmosdb_uri = 'URI'
+    cosmosdb_key = 'Key'
     cosmos_client = CosmosClient(cosmosdb_uri, cosmosdb_key)
-    database_name = 'your_database_name'
+    database_name = 'spreeDB'
     container_name = 'customer_details'
 
     # Check if the customer exists in Cosmos DB
@@ -33,6 +35,14 @@ def login_customer(req: func.HttpRequest) -> func.HttpResponse:
     result = container.query_items(query=query, enable_cross_partition_query=True)
 
     if len(list(result)) > 0:
-        return func.HttpResponse("Customer logged in successfully.", status_code=200)
+        return func.HttpResponse(
+            json.dumps({"code": "SUCCESS", "message": "Customer logged in successfully."}),
+            status_code=200,
+            mimetype='application/json'
+            )
 
-    return func.HttpResponse("Invalid phone number or password.", status_code=401)
+    return func.HttpResponse(
+        json.dumps({"code": "ERROR", "message": "Invalid phone number or password."}),
+        status_code=401,
+        mimetype='application/json'
+        )
